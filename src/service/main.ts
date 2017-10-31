@@ -115,8 +115,47 @@ function ParseCurrencyPair(raw: string) : Models.CurrencyPair {
 const pair = ParseCurrencyPair(config.GetString("TradedPair"));
 
 const defaultActive : Models.SerializedQuotesActive = new Models.SerializedQuotesActive(false, new Date(1));
+/*
 const defaultQuotingParameters : Models.QuotingParameters = new Models.QuotingParameters(.3, .05, Models.QuotingMode.Top, 
     Models.FairValueModel.BBO, 3, .8, false, Models.AutoPositionMode.Off, false, 2.5, 300, .095, 2*.095, .095, 3, .1);
+*/
+const defaultQuotingParameters : Models.QuotingParameters = new Models.QuotingParameters(
+0.01 * 0.0002, // width 万分之二 开仓的最小价差？
+.05, // size
+Models.QuotingMode.Top, // mode
+Models.FairValueModel.BBO, // fvModel
+3, // targetBasePosition
+.8, // positionDivergence 自动平衡允许的仓位变化范围
+false, // ewmaProtection
+Models.AutoPositionMode.Off, // autoPositionMode
+false, // aggressivePositionRebalancing 启用自动平衡
+2.5, // tradesPerMinute
+300, // tradeRateSeconds
+.095, // longEwma
+2*.095, // shortEwma
+.095, // quotingEwma
+3, // aprMultiplier 自动平衡时的下单系数，最大下单量为aprMultiplier*size
+.1 // stepOverSize JOIN/TOP时，一档量大于这个值，才挂到一档价，否则，挂二档价
+);
+
+/*
+width: number, 价格相关的参数，开仓的最小价差？
+size: number,
+mode: QuotingMode,
+fvModel: FairValueModel,
+targetBasePosition: number,
+positionDivergence: number, 自动平衡允许的仓位变化范围
+ewmaProtection: boolean,
+autoPositionMode: AutoPositionMode,
+aggressivePositionRebalancing: boolean, 启用自动平衡
+tradesPerMinute: number,
+tradeRateSeconds: number,
+longEwma: number,
+shortEwma: number,
+quotingEwma: number,
+aprMultiplier: number,
+stepOverSize: number
+*/
 
 const backTestSimulationSetup = (inputData : Array<Models.Market | Models.MarketTrade>, parameters : Backtest.BacktestParameters) : SimulationClasses => {
     const timeProvider : Utils.ITimeProvider = new Backtest.BacktestTimeProvider(moment(_.first(inputData).time), moment(_.last(inputData).time));

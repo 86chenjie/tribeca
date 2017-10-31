@@ -99,12 +99,12 @@ export class QuotingEngine {
             this._log.warn("cannot compute a quote since no position report exists!");
             return null;
         }
-        const targetBasePosition = tbp.data;
+        const targetBasePosition = tbp.data; // 目标仓位
         
-        const latestPosition = this._positionBroker.latestReport;
-        const totalBasePosition = latestPosition.baseAmount + latestPosition.baseHeldAmount;
+        const latestPosition = this._positionBroker.latestReport; // 最新仓位
+        const totalBasePosition = latestPosition.baseAmount + latestPosition.baseHeldAmount; // 最新的可用仓位 + 冻结仓位
         
-        if (totalBasePosition < targetBasePosition - params.positionDivergence) {
+        if (totalBasePosition < targetBasePosition - params.positionDivergence) { // 最新仓位过小，需要买入
             unrounded.askPx = null;
             unrounded.askSz = null;
             if (params.aggressivePositionRebalancing)
