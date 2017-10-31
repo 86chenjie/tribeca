@@ -186,8 +186,8 @@ class OkexMarketDataGateway implements Interfaces.IMarketDataGateway {
         // var tradesChannel = "ok_" + symbolProvider.symbolWithoutUnderscore + "_trades_v1";
 
         var depthChannel = "ok_sub_spot_" + symbolProvider.symbol.toLowerCase() + "_depth_20";
-        var tradesChannel = "ok_sub_spot_" + symbolProvider.symbol.toLowerCase() + "_order";
-        console.log('---', depthChannel, tradesChannel)
+        var tradesChannel = "ok_sub_spot_" + symbolProvider.symbol.toLowerCase() + "_deals";
+        console.log('Market ---', depthChannel, tradesChannel)
         socket.setHandler(depthChannel, this.onDepth);
         socket.setHandler(tradesChannel, this.onTrade);
         
@@ -238,7 +238,7 @@ class OkexOrderEntryGateway implements Interfaces.IOrderEntryGateway {
             
         this._ordersWaitingForAckQueue.push(order.orderId);
             
-        this._socket.send<OrderAck>("ok_spotusd_trade", this._signer.signMessage(o), () => {
+        this._socket.send<OrderAck>("ok_spot_order", this._signer.signMessage(o), () => {
             this.OrderUpdate.trigger({
                 orderId: order.orderId,
                 computationalLatency: Utils.fastDiff(Utils.date(), order.time)
@@ -268,7 +268,7 @@ class OkexOrderEntryGateway implements Interfaces.IOrderEntryGateway {
 
     cancelOrder = (cancel : Models.OrderStatusReport) => {
         var c : Cancel = {order_id: cancel.exchangeId, symbol: this._symbolProvider.symbol };
-        this._socket.send<OrderAck>("ok_spotusd_cancel_order", this._signer.signMessage(c), () => {
+        this._socket.send<OrderAck>("ok_spot_cancel_order", this._signer.signMessage(c), () => {
             this.OrderUpdate.trigger({
                 orderId: cancel.orderId,
                 computationalLatency: Utils.fastDiff(Utils.date(), cancel.time)
@@ -334,15 +334,17 @@ class OkexOrderEntryGateway implements Interfaces.IOrderEntryGateway {
             private _socket : OkexWebsocket, 
             private _signer: OkexMessageSigner,
             private _symbolProvider: OkexSymbolProvider) {
-        _socket.setHandler("ok_usd_realtrades", this.onTrade);
-        _socket.setHandler("ok_spotusd_trade", this.onOrderAck);
-        _socket.setHandler("ok_spotusd_cancel_order", this.onCancel);
+        var orderChannel = "ok_sub_spot_" + _symbolProvider.symbol.toLowerCase() + "_order";
+        _socket.setHandler(orderChannel, this.onTrade); // 订单状态通知
+        _socket.setHandler("ok_spot_order", this.onOrderAck); // 下单是否成功
+        _socket.setHandler("ok_spot_cancel_order", this.onCancel); // 撤单是否成功
         
         _socket.ConnectChanged.on(cs => {
             this.ConnectChanged.trigger(cs);
             
             if (cs === Models.ConnectivityStatus.Connected) {
-                _socket.send("ok_usd_realtrades", _signer.signMessage({}));
+                // 需要订单状态通知
+                _socket.send(orderChannel, _signer.signMessage({}));
             }
         });
     }
