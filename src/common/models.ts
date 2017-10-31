@@ -60,7 +60,14 @@ export class MarketTrade implements ITimestamped {
 
 export enum Currency { 
     USD, 
-    BTC, 
+    BTC,
+	BT1,
+	BT2,
+	BCC,
+	BCS,
+	BTG,
+	ETC,
+	USDT,
     LTC, 
     EUR, 
     GBP, 
@@ -103,7 +110,7 @@ export function fromCurrency(c: Currency) : string|undefined {
 
 export enum GatewayType { MarketData, OrderEntry, Position }
 export enum ConnectivityStatus { Connected, Disconnected }
-export enum Exchange { Null, HitBtc, OkCoin, AtlasAts, BtcChina, Coinbase, Bitfinex }
+export enum Exchange { Null, HitBtc, OkCoin, Okex, AtlasAts, BtcChina, Coinbase, Bitfinex }
 export enum Side { Bid, Ask, Unknown }
 export enum OrderType { Limit, Market }
 export enum TimeInForce { IOC, FOK, GTC }
