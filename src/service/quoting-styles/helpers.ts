@@ -12,7 +12,7 @@ export class QuoteInput {
         public fv: Models.FairValue, 
         public params: Models.QuotingParameters,
         public minTickIncrement: number,
-        public minSizeIncrement: number = 0.01) {}
+        public minSizeIncrement: number = 0.01) {} // 这个字段从未被使用过
 }
 
 export interface QuoteStyle {

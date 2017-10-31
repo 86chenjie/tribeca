@@ -43,6 +43,7 @@ export class JoinQuoteStyle implements StyleHelpers.QuoteStyle {
     };
 }
 
+// 计算当前行情的有效的价格/数量信息
 function getQuoteAtTopOfMarket(input: StyleHelpers.QuoteInput): StyleHelpers.GeneratedQuote {
     var topBid = (input.market.bids[0].size > input.params.stepOverSize ? input.market.bids[0] : input.market.bids[1]);
     if (typeof topBid === "undefined") topBid = input.market.bids[0]; // only guaranteed top level exists
@@ -55,13 +56,18 @@ function getQuoteAtTopOfMarket(input: StyleHelpers.QuoteInput): StyleHelpers.Gen
     return new StyleHelpers.GeneratedQuote(bidPx, topBid.size, askPx, topAsk.size);
 }
 
+// TOP/JOIN区别只是一个小价差
 function computeTopJoinQuote(input: StyleHelpers.QuoteInput) {
     var genQt = getQuoteAtTopOfMarket(input);
 
+    // TOP时，买一价加上一个小价差，这样可以排到前面
     if (input.params.mode === Models.QuotingMode.Top && genQt.bidSz > .2) {
         genQt.bidPx += input.minTickIncrement;
     }
 
+    // width>>BBO时，使用 中间价-width/2 作为买价
+    // width<<BBO时，使用 买一价
+    // 总结，使用尽量低的买价。width理解为，为了避免买卖价太接近，设置的最小值
     var minBid = input.fv.price - input.params.width / 2.0;
     genQt.bidPx = Math.min(minBid, genQt.bidPx);
 
@@ -79,6 +85,7 @@ function computeTopJoinQuote(input: StyleHelpers.QuoteInput) {
 }
 
 function computeInverseJoinQuote(input: StyleHelpers.QuoteInput) {
+    // 一档买卖价
     var genQt = getQuoteAtTopOfMarket(input);
 
     var mktWidth = Math.abs(genQt.askPx - genQt.bidPx);

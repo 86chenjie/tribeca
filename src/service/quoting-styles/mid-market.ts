@@ -10,6 +10,7 @@ export class MidMarketQuoteStyle implements StyleHelpers.QuoteStyle {
         var width = input.params.width;
         var size = input.params.size;
     
+    	// 使用中间价，确保价差满足width
         var bidPx = Math.max(input.fv.price - width, 0);
         var askPx = input.fv.price + width;
     

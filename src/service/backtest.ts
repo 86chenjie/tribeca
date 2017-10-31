@@ -252,7 +252,8 @@ export class BacktestGateway implements Interfaces.IPositionGateway, Interfaces.
 }
 
 class BacktestGatewayDetails implements Interfaces.IExchangeDetailsGateway {
-    minTickIncrement: number = 0.01;
+    // minTickIncrement: number = 0.01; // 下单时，调整买卖订单价格使用  设置为交易所允许的最小变动
+	minTickIncrement: number = 0.00000001;
 
     public get hasSelfTradePrevention() {
         return false;
