@@ -80,7 +80,6 @@ class OkexWebsocket {
         
         if (parameters !== null) 
             subsReq.parameters = parameters;
-        console.log('---send', JSON.stringify(subsReq));
         
         this._ws.send(JSON.stringify(subsReq), (e: Error) => {
             if (!e && cb) cb();
@@ -92,7 +91,6 @@ class OkexWebsocket {
     }
 
     private onMessage = (raw : string) => {
-        console.log('---onMessage', raw);
         var t = Utils.date();
         try {
             var msg : OkexMessageIncomingMessage = JSON.parse(raw)[0];
@@ -132,19 +130,13 @@ class OkexWebsocket {
     private _ws : ws;
     constructor(config : Config.IConfigProvider) {
         this._ws = new ws(config.GetString("OkexWsUrl"));
-        console.log('---', config.GetString("OkexWsUrl"));
 
         this._ws.on("open", () => {
-            console.log('...open');
             this.ConnectChanged.trigger(Models.ConnectivityStatus.Connected); 
         });
         this._ws.on("message", this.onMessage);
         this._ws.on("close", () => {
-            console.log('...close');
             this.ConnectChanged.trigger(Models.ConnectivityStatus.Disconnected)
-        });
-        this._ws.on("error", (err) => {
-            console.log('...error', err);
         });
     }
 }
@@ -182,12 +174,8 @@ class OkexMarketDataGateway implements Interfaces.IMarketDataGateway {
 
     private _log = log("tribeca:gateway:OkexMD");
     constructor(socket : OkexWebsocket, symbolProvider: OkexSymbolProvider) {
-        // var depthChannel = "ok_" + symbolProvider.symbolWithoutUnderscore + "_depth";
-        // var tradesChannel = "ok_" + symbolProvider.symbolWithoutUnderscore + "_trades_v1";
-
         var depthChannel = "ok_sub_spot_" + symbolProvider.symbol.toLowerCase() + "_depth_20";
         var tradesChannel = "ok_sub_spot_" + symbolProvider.symbol.toLowerCase() + "_deals";
-        console.log('Market ---', depthChannel, tradesChannel)
         socket.setHandler(depthChannel, this.onDepth);
         socket.setHandler(tradesChannel, this.onTrade);
         
