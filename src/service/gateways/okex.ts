@@ -80,6 +80,7 @@ class OkexWebsocket {
         
         if (parameters !== null) 
             subsReq.parameters = parameters;
+        console.log('---send', JSON.stringify(subsReq));
         
         this._ws.send(JSON.stringify(subsReq), (e: Error) => {
             if (!e && cb) cb();
