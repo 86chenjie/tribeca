@@ -171,6 +171,7 @@ const backTestSimulationSetup = (inputData : Array<Models.Market | Models.Market
     };
 };
 
+// 交易前的准备
 const liveTradingSetup = () : SimulationClasses => {
     const timeProvider : Utils.ITimeProvider = new Utils.RealTimeProvider();
     
@@ -205,8 +206,9 @@ const liveTradingSetup = () : SimulationClasses => {
         }
     };
     
-    const exchange = getExchange();
+    const exchange = getExchange(); // 交易所的下标
     
+	// 返回交易所的gateway
     const getExch = (orderCache: Broker.OrderStateCache): Promise<Interfaces.CombinedGateway> => {
         switch (exchange) {
             case Models.Exchange.HitBtc: return HitBtc.createHitBtc(config, pair);
