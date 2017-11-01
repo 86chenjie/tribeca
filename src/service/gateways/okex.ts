@@ -91,7 +91,7 @@ class OkexWebsocket {
     }
 
     private onMessage = (raw : string) => {
-        console.log('...onMessage', raw);
+        // console.log('...onMessage', raw);
         var t = Utils.date();
         try {
             var msg : OkexMessageIncomingMessage = JSON.parse(raw)[0];
