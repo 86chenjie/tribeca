@@ -53,6 +53,7 @@ export class ObservableEWMACalculator implements Interfaces.IEwmaCalculator {
         this.onTick();
     }
 
+	// 1分钟调用一次
     private onTick = () => {
         var fv = this._fv.latestFairValue;
 

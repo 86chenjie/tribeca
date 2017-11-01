@@ -120,42 +120,23 @@ const defaultQuotingParameters : Models.QuotingParameters = new Models.QuotingPa
     Models.FairValueModel.BBO, 3, .8, false, Models.AutoPositionMode.Off, false, 2.5, 300, .095, 2*.095, .095, 3, .1);
 */
 const defaultQuotingParameters : Models.QuotingParameters = new Models.QuotingParameters(
-0.01 * 0.0002, // width 万分之二 开仓的最小价差？
-.05, // size
+0.01 * 0.0002, // width 万分之二 确保开仓价差大于这个值
+.1, // size
 Models.QuotingMode.Top, // mode
-Models.FairValueModel.BBO, // fvModel
-3, // targetBasePosition
-.8, // positionDivergence 自动平衡允许的仓位变化范围
-false, // ewmaProtection
-Models.AutoPositionMode.Off, // autoPositionMode
-false, // aggressivePositionRebalancing 启用自动平衡
-2.5, // tradesPerMinute
-300, // tradeRateSeconds
-.095, // longEwma
-2*.095, // shortEwma
-.095, // quotingEwma
+Models.FairValueModel.wBBO, // fvModel
+3.4, // targetBasePosition
+2, // positionDivergence 自动平衡允许的仓位变化范围
+true, // ewmaProtection 使用指标价格，加大卖价/减小买价
+Models.AutoPositionMode.EwmaBasic, // autoPositionMode Off/EwmaBasic
+false, // aggressivePositionRebalancing 启用自动平衡，失衡时，最大下单量为aprMultiplier*size
+10, // tradesPerMinute
+2, // tradeRateSeconds
+.095, // longEwma	长期指标，最新数据权重小，长期数据
+2*.095, // shortEwma 短期指标，最新数据权重大，短期数据
+.095, // quotingEwma 最新FV的权重，0.1左右。每分钟，使用当前FV更新一次
 3, // aprMultiplier 自动平衡时的下单系数，最大下单量为aprMultiplier*size
 .1 // stepOverSize JOIN/TOP时，一档量大于这个值，才挂到一档价，否则，挂二档价
 );
-
-/*
-width: number, 价格相关的参数，开仓的最小价差？
-size: number,
-mode: QuotingMode,
-fvModel: FairValueModel,
-targetBasePosition: number,
-positionDivergence: number, 自动平衡允许的仓位变化范围
-ewmaProtection: boolean,
-autoPositionMode: AutoPositionMode,
-aggressivePositionRebalancing: boolean, 启用自动平衡
-tradesPerMinute: number,
-tradeRateSeconds: number,
-longEwma: number,
-shortEwma: number,
-quotingEwma: number,
-aprMultiplier: number,
-stepOverSize: number
-*/
 
 const backTestSimulationSetup = (inputData : Array<Models.Market | Models.MarketTrade>, parameters : Backtest.BacktestParameters) : SimulationClasses => {
     const timeProvider : Utils.ITimeProvider = new Backtest.BacktestTimeProvider(moment(_.first(inputData).time), moment(_.last(inputData).time));

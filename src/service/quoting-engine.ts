@@ -85,11 +85,11 @@ export class QuotingEngine {
             return null;
 
         if (params.ewmaProtection && this._ewma.latest !== null) {
-            if (this._ewma.latest > unrounded.askPx) {
+            if (this._ewma.latest > unrounded.askPx) { // 卖价<指标价，使用指标价，高价卖出
                 unrounded.askPx = Math.max(this._ewma.latest, unrounded.askPx);
             }
 
-            if (this._ewma.latest < unrounded.bidPx) {
+            if (this._ewma.latest < unrounded.bidPx) { // 买价>指标价，使用指标价，低价买入
                 unrounded.bidPx = Math.min(this._ewma.latest, unrounded.bidPx);
             }
         }
@@ -101,9 +101,9 @@ export class QuotingEngine {
         }
         const targetBasePosition = tbp.data; // 目标仓位
         
-        const latestPosition = this._positionBroker.latestReport; // 最新仓位
-        const totalBasePosition = latestPosition.baseAmount + latestPosition.baseHeldAmount; // 最新的可用仓位 + 冻结仓位
+        const latestPosition = this._positionBroker.latestReport; // 最新仓位Amount; // 最新的可用仓位 + 冻结仓位
         
+        const totalBasePosition = latestPosition.baseAmount + latestPosition.baseHeld
         if (totalBasePosition < targetBasePosition - params.positionDivergence) { // 最新仓位过小，需要买入
             unrounded.askPx = null;
             unrounded.askSz = null;

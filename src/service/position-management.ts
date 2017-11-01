@@ -58,6 +58,12 @@ export class PositionManager {
         const minTick = this._details.minTickIncrement;    
         const factor = 1/minTick;
         let newTargetPosition = ((newShort * factor/ newLong) - factor) * 5;
+		/*
+		(newShort * factor/ newLong) - factor
+		(newShort/newLong) * factor - factor
+		(newShort/newLong -1) * factor * 5
+		newShort = 4, newLong = 5，短期下跌趋势，-1 * factor ???
+		*/
 
         if (newTargetPosition > 1) newTargetPosition = 1;
         if (newTargetPosition < -1) newTargetPosition = -1;
@@ -98,13 +104,13 @@ export class TargetBasePositionManager {
     }
 
     private recomputeTargetPosition = () => {
-        const latestPosition = this._positionBroker.latestReport;
+        const latestPosition = this._positionBroker.latestReport; // 最新仓位
         const params = this._params.latest;
 
         if (params === null || latestPosition === null)
             return;
 
-        let targetBasePosition: number = params.targetBasePosition;
+        let targetBasePosition: number = params.targetBasePosition; // 设置的目标仓位
         if (params.autoPositionMode === Models.AutoPositionMode.EwmaBasic) {
             targetBasePosition = ((1 + this._positionManager.latestTargetPosition) / 2.0) * latestPosition.value;
         }
