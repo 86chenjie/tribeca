@@ -128,7 +128,7 @@ Models.FairValueModel.wBBO, // fvModel
 2, // positionDivergence 自动平衡允许的仓位变化范围
 true, // ewmaProtection 使用指标价格，加大卖价/减小买价
 Models.AutoPositionMode.EwmaBasic, // autoPositionMode Off/EwmaBasic
-false, // aggressivePositionRebalancing 启用自动平衡，失衡时，最大下单量为aprMultiplier*size
+true, // aggressivePositionRebalancing 启用自动平衡，失衡时，最大下单量为aprMultiplier*size
 10, // tradesPerMinute
 2, // tradeRateSeconds
 .095, // longEwma	长期指标，最新数据权重小，长期数据
