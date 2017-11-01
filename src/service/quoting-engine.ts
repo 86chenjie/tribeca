@@ -101,9 +101,9 @@ export class QuotingEngine {
         }
         const targetBasePosition = tbp.data; // 目标仓位
         
-        const latestPosition = this._positionBroker.latestReport; // 最新仓位Amount
+        const latestPosition = this._positionBroker.latestReport; // 最新仓位
         
-        const totalBasePosition = latestPosition.baseAmount + latestPosition.baseHeld; // 最新的可用仓位 + 冻结仓位
+        const totalBasePosition = latestPosition.baseAmount + latestPosition.baseHeldAmount; // 最新的可用仓位 + 冻结仓位
         if (totalBasePosition < targetBasePosition - params.positionDivergence) { // 最新仓位过小，需要买入
             unrounded.askPx = null;
             unrounded.askSz = null;
