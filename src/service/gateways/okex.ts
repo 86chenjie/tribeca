@@ -423,6 +423,7 @@ class OkexPositionGateway implements Interfaces.IPositionGateway {
 			case "etc": return Models.Currency.ETC;
 			case "eth": return Models.Currency.ETH;
 			case "usdt": return Models.Currency.USDT;
+			case "zcash": return Models.Currency.ZEC;
             default: throw new Error("Unsupported currency " + name);
         }
     }
