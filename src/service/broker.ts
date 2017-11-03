@@ -25,6 +25,7 @@ export class MarketDataBroker implements Interfaces.IMarketDataBroker {
 
     private _currentBook : Models.Market = null;
     private handleMarketData = (book : Models.Market) => {
+		console.log('broker MarketDataBroker ', book);
         this._currentBook = book;
         this.MarketData.trigger(this.currentBook);
     };
