@@ -39,9 +39,10 @@ export class MarketDataBroker implements Interfaces.IMarketDataBroker {
         time.setInterval(() => {
             if (!this.currentBook) return;
             rawMarketPublisher.publish(this._currentBook);
+			// 每一秒，保存当前深度行情到md表，只保存3档
             persister.persist(new Models.Market(
                 _.take(this.currentBook.bids, 3), 
-                _.take(this.currentBook.bids, 3), 
+                _.take(this.currentBook.asks, 3), 
                 new Date()));
         }, moment.duration(1, "second"));
 
