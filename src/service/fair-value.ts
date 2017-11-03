@@ -41,7 +41,7 @@ export class FairValueEngine {
         this._fvPublisher.publish(this._latest);
 
         if (this._latest !== null) {
-			console.log('FairValueEngine _latest=', this._latest);
+			console.log('FairValueEngine _latest=', val, this._latest);
 			this._fvPersister.persist(this._latest);
 		}
             
