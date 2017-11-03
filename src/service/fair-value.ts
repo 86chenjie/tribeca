@@ -91,6 +91,7 @@ export class FairValueEngine {
         }
 
         var fv = new Models.FairValue(this.ComputeFV(ask[0], bid[0], this._qlParamRepo.latest.fvModel), t);
+		console.log('FairValueEngine recalcFairValue', fv, ask[0], bid[0]);
         this.latestFairValue = fv;
     };
 }
