@@ -285,6 +285,8 @@ const runTradingSystem = async (classes: SimulationClasses) : Promise<void> => {
     
     const exchange = classes.exchange;
 
+	// 开发模式，显示所有订单
+	// 正式模式，只显示用户通过UI发起的订单
     const shouldPublishAllOrders = !config.Has("ShowAllOrders") || config.GetBoolean("ShowAllOrders");
     const ordersFilter = shouldPublishAllOrders ? {} : {source: {$gte: Models.OrderSource.OrderTicket}};
 
@@ -302,10 +304,12 @@ const runTradingSystem = async (classes: SimulationClasses) : Promise<void> => {
     _.defaults(initParams, defaultQuotingParameters);
     _.defaults(initActive, defaultActive);
 
+	// 所有订单信息
     const orderCache = new Broker.OrderStateCache();
     const timeProvider = classes.timeProvider;
     const getPublisher = classes.getPublisher;
 
+	// 某个交易所的接口
     const gateway = await classes.getExch(orderCache);        
     
     const advert = new Models.ProductAdvertisement(exchange, pair, config.GetString("TRIBECA_MODE"), gateway.base.minTickIncrement);
@@ -336,6 +340,7 @@ const runTradingSystem = async (classes: SimulationClasses) : Promise<void> => {
     const cancelOrderReceiver = getReceiver<Models.OrderStatusReport>(Messaging.Topics.CancelOrder);
     const cancelAllOrdersReceiver = getReceiver(Messaging.Topics.CancelAllOrders);
             
+	// 交易所信息broker
     const broker = new Broker.ExchangeBroker(pair, gateway.md, gateway.base, gateway.oe, connectivity);
     mainLog.info({
         exchange: broker.exchange, 
@@ -346,10 +351,13 @@ const runTradingSystem = async (classes: SimulationClasses) : Promise<void> => {
         hasSelfTradePrevention: broker.hasSelfTradePrevention,
     }, "using the following exchange details");
 
+	// 订单broker
     const orderBroker = new Broker.OrderBroker(timeProvider, broker, gateway.oe, orderPersister, tradesPersister, orderStatusPublisher,
         tradePublisher, submitOrderReceiver, cancelOrderReceiver, cancelAllOrdersReceiver, messages, orderCache, initOrders, initTrades, shouldPublishAllOrders);
-    const marketDataBroker = new Broker.MarketDataBroker(timeProvider, gateway.md, marketDataPublisher, marketDataPersister, messages);
-    const positionBroker = new Broker.PositionBroker(timeProvider, broker, gateway.pg, positionPublisher, positionPersister, marketDataBroker);
+    // 行情broker
+	const marketDataBroker = new Broker.MarketDataBroker(timeProvider, gateway.md, marketDataPublisher, marketDataPersister, messages);
+    // 仓位broker
+	const positionBroker = new Broker.PositionBroker(timeProvider, broker, gateway.pg, positionPublisher, positionPersister, marketDataBroker);
 
     const paramsRepo = new QuotingParameters.QuotingParametersRepository(quotingParametersPublisher, quotingParametersReceiver, initParams);
     paramsRepo.NewParameters.on(() => paramsPersister.persist(paramsRepo.latest));

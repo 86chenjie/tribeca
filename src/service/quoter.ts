@@ -9,14 +9,14 @@ import Models = require("../common/models");
 import Utils = require("./utils");
 import Interfaces = require("./interfaces");
 
-class QuoteOrder {
+class QuoteOrder { // 订单号 + 价量
     constructor(public quote: Models.Quote, public orderId: string) { }
 }
 
 // aggregator for quoting
 export class Quoter {
-    private _bidQuoter: ExchangeQuoter;
-    private _askQuoter: ExchangeQuoter;
+    private _bidQuoter: ExchangeQuoter; // 买方向的quote订单管理
+    private _askQuoter: ExchangeQuoter; // 卖方向的quote订单管理
 
     constructor(broker: Interfaces.IOrderBroker,
         exchBroker: Interfaces.IBroker) {
@@ -24,6 +24,7 @@ export class Quoter {
         this._askQuoter = new ExchangeQuoter(broker, exchBroker, Models.Side.Ask);
     }
 
+	// 更新quote，传入 价量/买卖方向
     public updateQuote = (q: Models.Timestamped<Models.Quote>, side: Models.Side): Models.QuoteSent => {
         switch (side) {
             case Models.Side.Ask:
@@ -33,6 +34,7 @@ export class Quoter {
         }
     };
 
+	// 取消quote，传入 方向
     public cancelQuote = (s: Models.Timestamped<Models.Side>): Models.QuoteSent => {
         switch (s.data) {
             case Models.Side.Ask:
@@ -42,6 +44,7 @@ export class Quoter {
         }
     };
 
+	// 获取所有的quote订单列表
     public quotesSent = (s: Models.Side) => {
         switch (s) {
             case Models.Side.Ask:
@@ -53,11 +56,12 @@ export class Quoter {
 }
 
 // wraps a single broker to make orders behave like quotes
+// 保存所有的quote订单 / 当前quote订单
 export class ExchangeQuoter {
     private _activeQuote: QuoteOrder = null;
     private _exchange: Models.Exchange;
 
-    public quotesSent: QuoteOrder[] = [];
+    public quotesSent: QuoteOrder[] = []; // 所有发出的quote订单
 
     constructor(private _broker: Interfaces.IOrderBroker,
         private _exchBroker: Interfaces.IBroker,
@@ -66,23 +70,25 @@ export class ExchangeQuoter {
         this._broker.OrderUpdate.on(this.handleOrderUpdate);
     }
 
+	// 订单状态变化通知
     private handleOrderUpdate = (o: Models.OrderStatusReport) => {
         switch (o.orderStatus) {
             case Models.OrderStatus.Cancelled:
             case Models.OrderStatus.Complete:
-            case Models.OrderStatus.Rejected:
+            case Models.OrderStatus.Rejected: // 订单被拒绝
                 const bySide = this._activeQuote;
-                if (bySide !== null && bySide.orderId === o.orderId) {
+                if (bySide !== null && bySide.orderId === o.orderId) { // 取消quote订单
                     this._activeQuote = null;
                 }
 
-                this.quotesSent = this.quotesSent.filter(q => q.orderId !== o.orderId);
+                this.quotesSent = this.quotesSent.filter(q => q.orderId !== o.orderId); // 过滤被拒绝的订单
         }
     };
 
+	// 返回quote的发送状态
     public updateQuote = (q: Models.Timestamped<Models.Quote>): Models.QuoteSent => {
-        if (this._exchBroker.connectStatus !== Models.ConnectivityStatus.Connected)
-            return Models.QuoteSent.UnableToSend;
+        if (this._exchBroker.connectStatus !== Models.ConnectivityStatus.Connected) // 没有连接
+            return Models.QuoteSent.UnableToSend; // quote无法发送
 
         if (this._activeQuote !== null) {
             return this.modify(q);
@@ -90,6 +96,7 @@ export class ExchangeQuoter {
         return this.start(q);
     };
 
+	// 取消订单
     public cancelQuote = (t: Date): Models.QuoteSent => {
         if (this._exchBroker.connectStatus !== Models.ConnectivityStatus.Connected)
             return Models.QuoteSent.UnableToSend;
@@ -97,12 +104,14 @@ export class ExchangeQuoter {
         return this.stop(t);
     };
 
+	// 先取消，再发送quote订单
     private modify = (q: Models.Timestamped<Models.Quote>): Models.QuoteSent => {
         this.stop(q.time);
         this.start(q);
         return Models.QuoteSent.Modify;
     };
 
+	// 开启quote订单
     private start = (q: Models.Timestamped<Models.Quote>): Models.QuoteSent => {
         const existing = this._activeQuote;
 
@@ -117,14 +126,15 @@ export class ExchangeQuoter {
         return Models.QuoteSent.First;
     };
 
+	// 停止quote订单
     private stop = (t: Date): Models.QuoteSent => {
-        if (this._activeQuote === null) {
-            return Models.QuoteSent.UnsentDelete;
+        if (this._activeQuote === null) { // quote不存在
+            return Models.QuoteSent.UnsentDelete; // 无法取消
         }
 
         const cxl = new Models.OrderCancel(this._activeQuote.orderId, this._exchange, t);
         this._broker.cancelOrder(cxl);
         this._activeQuote = null;
-        return Models.QuoteSent.Delete;
+        return Models.QuoteSent.Delete; // 删除状态
     };
 }

@@ -28,9 +28,10 @@ import moment = require("moment");
 export class FairValueEngine {
     public FairValueChanged = new Utils.Evt<Models.FairValue>();
 
-    private _latest: Models.FairValue = null;
+    private _latest: Models.FairValue = null; // 时间点 + 价格
     public get latestFairValue() { return this._latest; }
     public set latestFairValue(val: Models.FairValue) {
+		// 价格相差很小，不覆盖
         if (this._latest != null
             && val != null
             && Math.abs(this._latest.price - val.price) < this._details.minTickIncrement) return;
@@ -57,9 +58,9 @@ export class FairValueEngine {
 
     private static ComputeFVUnrounded(ask: Models.MarketSide, bid: Models.MarketSide, model: Models.FairValueModel) {
         switch (model) {
-            case Models.FairValueModel.BBO:
+            case Models.FairValueModel.BBO: // best bid offer, 取中间价
                 return (ask.price + bid.price) / 2.0;
-            case Models.FairValueModel.wBBO:
+            case Models.FairValueModel.wBBO: // 使用下单量加权
                 return (ask.price * ask.size + bid.price * bid.size) / (ask.size + bid.size);
         }
     }
@@ -69,6 +70,7 @@ export class FairValueEngine {
         return Utils.roundNearest(unrounded, this._details.minTickIncrement);
     }
 
+	// 多档行情变化/quote参数变化时，计算FV
     private recalcFairValue = (t: Date) => {
         var mkt = this._filtration.latestFilteredMarket;
 

@@ -44,6 +44,7 @@ export class EmptyEWMACalculator implements Interfaces.IEwmaCalculator {
     Updated = new Utils.Evt<any>();
 }
 
+// 使用分钟FV值，计算加权FV
 export class ObservableEWMACalculator implements Interfaces.IEwmaCalculator {
     private _log = log("ewma");
 
@@ -70,7 +71,7 @@ export class ObservableEWMACalculator implements Interfaces.IEwmaCalculator {
     private _latest: number = null;
     public get latest() { return this._latest; }
     private setLatest = (v: number) => {
-        if (Math.abs(v - this._latest) > 1e-3) {
+        if (Math.abs(v - this._latest) > 1e-4) { // -3 -> -4
             this._latest = v;
             this.Updated.trigger();
 

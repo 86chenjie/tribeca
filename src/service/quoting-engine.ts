@@ -33,12 +33,13 @@ import QuotingStyleRegistry = require("./quoting-styles/style-registry");
 import {QuoteInput} from "./quoting-styles/helpers";
 import log from "./logging";
 
+// 根据行情变化，重新计算quote，并通知其它组件
 export class QuotingEngine {
     private _log = log("quotingengine");
 
-    public QuoteChanged = new Utils.Evt<Models.TwoSidedQuote>();
+    public QuoteChanged = new Utils.Evt<Models.TwoSidedQuote>(); // quote变化后的事件
 
-    private _latest: Models.TwoSidedQuote = null;
+    private _latest: Models.TwoSidedQuote = null; // 买价量 / 卖价量
     public get latestQuote() { return this._latest; }
     public set latestQuote(val: Models.TwoSidedQuote) {
         if (!quotesChanged(this._latest, val, this._details.minTickIncrement)) 
@@ -64,26 +65,33 @@ export class QuotingEngine {
         private _safeties: Safety.SafetyCalculator) {
         var recalcWithoutInputTime = () => this.recalcQuote(_timeProvider.utcNow());
 
+		// 新深度行情时
         _filteredMarkets.FilteredMarketChanged.on(m => this.recalcQuote(Utils.timeOrDefault(m, _timeProvider)));
+		// quote参数变化时
         _qlParamRepo.NewParameters.on(recalcWithoutInputTime);
+		// 有新成交trade时
         _orderBroker.Trade.on(recalcWithoutInputTime);
+		// FV的加权值变化时
         _ewma.Updated.on(recalcWithoutInputTime);
         _quotePublisher.registerSnapshot(() => this.latestQuote === null ? [] : [this.latestQuote]);
+		// ？
         _targetPosition.NewTargetPosition.on(recalcWithoutInputTime);
         _safeties.NewValue.on(recalcWithoutInputTime);
-        
+        // 每隔一秒
         _timeProvider.setInterval(recalcWithoutInputTime, moment.duration(1, "seconds"));
     }
 
+	// 计算双边quote
     private computeQuote(filteredMkt: Models.Market, fv: Models.FairValue) {
         const params = this._qlParamRepo.latest;
         const minTick = this._details.minTickIncrement;
         const input = new QuoteInput(filteredMkt, fv, params, minTick);
-        const unrounded = this._registry.Get(params.mode).GenerateQuote(input);
+        const unrounded = this._registry.Get(params.mode).GenerateQuote(input); // 计算quote双边价量
         
         if (unrounded === null)
             return null;
 
+		// 使用加权FV来调整价格
         if (params.ewmaProtection && this._ewma.latest !== null) {
             if (this._ewma.latest > unrounded.askPx) { // 卖价<指标价，使用指标价，高价卖出
                 unrounded.askPx = Math.max(this._ewma.latest, unrounded.askPx);
@@ -99,22 +107,23 @@ export class QuotingEngine {
             this._log.warn("cannot compute a quote since no position report exists!");
             return null;
         }
-        const targetBasePosition = tbp.data; // 目标仓位
+        const targetBasePosition = tbp.data; // 设置的目标仓位
         
         const latestPosition = this._positionBroker.latestReport; // 最新仓位
         
+		// 最新的总仓位
         const totalBasePosition = latestPosition.baseAmount + latestPosition.baseHeldAmount; // 最新的可用仓位 + 冻结仓位
         if (totalBasePosition < targetBasePosition - params.positionDivergence) { // 最新仓位过小，需要买入
-            unrounded.askPx = null;
+            unrounded.askPx = null; // 取消卖单
             unrounded.askSz = null;
-            if (params.aggressivePositionRebalancing)
+            if (params.aggressivePositionRebalancing) // 设置了自动仓位平衡，加大买入量
                 unrounded.bidSz = Math.min(params.aprMultiplier*params.size, targetBasePosition - totalBasePosition);
         }
         
-        if (totalBasePosition > targetBasePosition + params.positionDivergence) {
-            unrounded.bidPx = null;
+        if (totalBasePosition > targetBasePosition + params.positionDivergence) { // 最新仓位过大，需要卖出
+            unrounded.bidPx = null; // 取消买单
             unrounded.bidSz = null;
-            if (params.aggressivePositionRebalancing)
+            if (params.aggressivePositionRebalancing) // 设置了自动仓位平衡，加大卖出量
                 unrounded.askSz = Math.min(params.aprMultiplier*params.size, totalBasePosition - targetBasePosition);
         }
         
@@ -130,15 +139,16 @@ export class QuotingEngine {
             unrounded.bidPx = safety.sellPong - params.width;
         }
         
-        if (safety.sell > params.tradesPerMinute) {
-            unrounded.askPx = null;
+        if (safety.sell > params.tradesPerMinute) { // 卖的次数超标
+            unrounded.askPx = null; // 取消卖单
             unrounded.askSz = null;
         }
-        if (safety.buy > params.tradesPerMinute) {
-            unrounded.bidPx = null;
+        if (safety.buy > params.tradesPerMinute) { // 买的次数超标
+            unrounded.bidPx = null; // 取消买单
             unrounded.bidSz = null;
         }
         
+		// 确保价格是minTick的倍数
         if (unrounded.bidPx !== null) {
             unrounded.bidPx = Utils.roundSide(unrounded.bidPx, minTick, Models.Side.Bid);
             unrounded.bidPx = Math.max(0, unrounded.bidPx);
@@ -162,6 +172,7 @@ export class QuotingEngine {
         return unrounded;
     }
 
+	// 多档行情变化时，重新计算quote
     private recalcQuote = (t: Date) => {
         const fv = this._fvEngine.latestFairValue;
         if (fv == null) {
@@ -233,6 +244,7 @@ const quoteChanged = (o: Models.Quote, n: Models.Quote, tick: number) : boolean 
     return Math.abs(oSz - nSz) > .001;
 }
 
+// quote是否变化了
 const quotesChanged = (o: Models.TwoSidedQuote, n: Models.TwoSidedQuote, tick: number) : boolean => {
     if ((!o && n) || (o && !n)) return true;
     if (!o && !n) return false;

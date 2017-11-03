@@ -54,6 +54,7 @@ export class MarketDataBroker implements Interfaces.IMarketDataBroker {
     }
 }
 
+// 保存所有订单信息
 export class OrderStateCache implements Interfaces.IOrderStateCache {
     public allOrders = new Map<string, Models.OrderStatusReport>();
     public exchIdsToClientIds = new Map<string, string>();
@@ -75,7 +76,7 @@ export class OrderBroker implements Interfaces.IOrderBroker {
                 p.resolve(null);
         };
 
-        this.OrderUpdate.on(orderUpdate);
+        this.OrderUpdate.on(orderUpdate); // 启用回掉
 
         for (let e of this._orderCache.allOrders.values()) {
             if (e.pendingCancel || Models.orderIsDone(e.orderStatus)) 
@@ -93,11 +94,11 @@ export class OrderBroker implements Interfaces.IOrderBroker {
         return promises.length;
     }
 
-    OrderUpdate = new Utils.Evt<Models.OrderStatusReport>();
+    OrderUpdate = new Utils.Evt<Models.OrderStatusReport>(); //订单状态变化通知
     private _cancelsWaitingForExchangeOrderId : {[clId : string] : Models.OrderCancel} = {};
 
     Trade = new Utils.Evt<Models.Trade>();
-    _trades : Models.Trade[] = [];
+    _trades : Models.Trade[] = []; // 成交记录
 
     private roundPrice = (price: number, side: Models.Side) : number => {
         return Utils.roundSide(price, this._baseBroker.minTickIncrement, side);
@@ -285,7 +286,7 @@ export class OrderBroker implements Interfaces.IOrderBroker {
         return o;
     };
 
-    private _pendingRemovals = new Array<Models.OrderStatusReport>();
+    private _pendingRemovals = new Array<Models.OrderStatusReport>(); // ？待删除的订单状态列表
     private updateOrderStatusInMemory = (osr : Models.OrderStatusReport) : boolean => {
         if (this.shouldPublish(osr) || !Models.orderIsDone(osr.orderStatus)) {
             this.addOrderStatusInMemory(osr);
@@ -302,6 +303,7 @@ export class OrderBroker implements Interfaces.IOrderBroker {
         this._orderCache.allOrders.set(osr.orderId, osr);
     };
 
+	// 5秒调用一次
     private clearPendingRemovals = () => {
         const now = new Date().getTime();
         const kept = new Array<Models.OrderStatusReport>();
@@ -349,18 +351,19 @@ export class OrderBroker implements Interfaces.IOrderBroker {
                 initOrders : Models.OrderStatusReport[],
                 initTrades : Models.Trade[],
                 private readonly _publishAllOrders: boolean) {
-        _.each(initOrders, this.addOrderStatusInMemory);
-        _.each(initTrades, t => this._trades.push(t));
+        _.each(initOrders, this.addOrderStatusInMemory); // 保存订单
+        _.each(initTrades, t => this._trades.push(t)); // 成交记录？ 每个订单可能有多个成交记录
                 
         _orderStatusPublisher.registerSnapshot(() => this.orderStatusSnapshot());
         _tradePublisher.registerSnapshot(() => _.takeRight(this._trades, 100));
 
+		// ? 前端页面请求新订单了
         _submittedOrderReciever.registerReceiver((o : Models.OrderRequestFromUI) => {
             this._log.info("got new order req", o);
             try {
                 const order = new Models.SubmitNewOrder(Models.Side[o.side], o.quantity, Models.OrderType[o.orderType],
                     o.price, Models.TimeInForce[o.timeInForce], this._baseBroker.exchange(), _timeProvider.utcNow(), 
-                    false, Models.OrderSource.OrderTicket);
+                    false, Models.OrderSource.OrderTicket); // ？OrderTicket
                 this.sendOrder(order);
             }
             catch (e) {
@@ -368,6 +371,7 @@ export class OrderBroker implements Interfaces.IOrderBroker {
             }
         });
         
+		// 某个订单被取消了
         _cancelOrderReciever.registerReceiver(o => {
             this._log.info("got new cancel req", o);
             try {
@@ -377,6 +381,7 @@ export class OrderBroker implements Interfaces.IOrderBroker {
             }
         });
         
+		// 取消所有订单
         _cancelAllOrdersReciever.registerReceiver(o => {
             this._log.info("handling cancel all orders request");
             this.cancelOpenOrders()
@@ -394,17 +399,18 @@ export class OrderBroker implements Interfaces.IOrderBroker {
     }
 }
 
+// 资产变化
 export class PositionBroker implements Interfaces.IPositionBroker {
     private _log = log("pos:broker");
 
     public NewReport = new Utils.Evt<Models.PositionReport>();
 
-    private _report : Models.PositionReport = null;
+    private _report : Models.PositionReport = null; // 最新的仓位信息
     public get latestReport() : Models.PositionReport {
         return this._report;
     }
 
-    private _currencies : { [currency : number] : Models.CurrencyPosition } = {};
+    private _currencies : { [currency : number] : Models.CurrencyPosition } = {}; // 每种资产对应的仓位信息
     public getPosition(currency : Models.Currency) : Models.CurrencyPosition {
         return this._currencies[currency];
     }
@@ -424,6 +430,7 @@ export class PositionBroker implements Interfaces.IPositionBroker {
         const baseAmount = basePosition.amount;
         const quoteAmount = quotePosition.amount;
         const mid = (this._mdBroker.currentBook.bids[0].price + this._mdBroker.currentBook.asks[0].price) / 2.0;
+		// 商品资产总价
         const baseValue = baseAmount + quoteAmount / mid + basePosition.heldAmount + quotePosition.heldAmount / mid;
         const quoteValue = baseAmount * mid + quoteAmount + basePosition.heldAmount * mid + quotePosition.heldAmount;
         const positionReport = new Models.PositionReport(baseAmount, quoteAmount, basePosition.heldAmount,
@@ -454,6 +461,7 @@ export class PositionBroker implements Interfaces.IPositionBroker {
     }
 }
 
+// 行情/订单 连接
 export class ExchangeBroker implements Interfaces.IBroker {
     private _log = log("ex:broker");
 
@@ -484,11 +492,11 @@ export class ExchangeBroker implements Interfaces.IBroker {
     ConnectChanged = new Utils.Evt<Models.ConnectivityStatus>();
     private mdConnected = Models.ConnectivityStatus.Disconnected;
     private oeConnected = Models.ConnectivityStatus.Disconnected;
-    private _connectStatus = Models.ConnectivityStatus.Disconnected;
+    private _connectStatus = Models.ConnectivityStatus.Disconnected; // 总的连接状态
     public onConnect = (gwType : Models.GatewayType, cs : Models.ConnectivityStatus) => {
         if (gwType === Models.GatewayType.MarketData) {
-            if (this.mdConnected === cs) return;
-            this.mdConnected = cs;
+            if (this.mdConnected === cs) return; // 连接状态没有变化，返回
+            this.mdConnected = cs; // 连接状态有变化
         }
 
         if (gwType === Models.GatewayType.OrderEntry) {
@@ -517,11 +525,11 @@ export class ExchangeBroker implements Interfaces.IBroker {
                 private _baseGateway : Interfaces.IExchangeDetailsGateway,
                 private _oeGateway : Interfaces.IOrderEntryGateway,
                 private _connectivityPublisher : Messaging.IPublish<Models.ConnectivityStatus>) {
-        this._mdGateway.ConnectChanged.on(s => {
+        this._mdGateway.ConnectChanged.on(s => { // 行情数据
             this.onConnect(Models.GatewayType.MarketData, s);
         });
 
-        this._oeGateway.ConnectChanged.on(s => {
+        this._oeGateway.ConnectChanged.on(s => { // 订单数据
             this.onConnect(Models.GatewayType.OrderEntry, s)
         });
 

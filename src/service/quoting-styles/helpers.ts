@@ -8,8 +8,8 @@ export class GeneratedQuote {
 
 export class QuoteInput {
     constructor(
-        public market: Models.Market, 
-        public fv: Models.FairValue, 
+        public market: Models.Market, // 深度行情
+        public fv: Models.FairValue, // 真实价格
         public params: Models.QuotingParameters,
         public minTickIncrement: number,
         public minSizeIncrement: number = 0.01) {} // 这个字段从未被使用过

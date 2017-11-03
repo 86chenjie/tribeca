@@ -45,6 +45,7 @@ export class PositionManager {
         this._timer = new RegularTimer(_timeProvider, this.updateEwmaValues, moment.duration(1, 'hours'), moment(lastTime));
     }
 
+	// 一个小时调用一次
     private updateEwmaValues = () => {
         const fv = this._fvAgent.latestFairValue;
         if (fv === null)

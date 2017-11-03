@@ -13,6 +13,7 @@ export class Timestamped<T> implements ITimestamped {
     }
 }
 
+// 价量
 export class MarketSide {
     constructor(public price: number,
                 public size: number) { }
@@ -22,6 +23,7 @@ export class MarketSide {
     }
 }
 
+// 行情网关的每笔成交记录
 export class GatewayMarketTrade implements ITimestamped {
     constructor(public price: number,
                 public size: number,
@@ -30,12 +32,14 @@ export class GatewayMarketTrade implements ITimestamped {
                 public make_side: Side) { }
 }
 
+// 从未被调用
 export function marketSideEquals(t: MarketSide, other: MarketSide, tol?: number) {
     tol = tol || 1e-4;
     if (other == null) return false;
     return Math.abs(t.price - other.price) > tol && Math.abs(t.size - other.size) > tol;
 }
 
+// 深度行情信息
 export class Market implements ITimestamped {
     constructor(public bids: MarketSide[],
                 public asks: MarketSide[],
@@ -46,16 +50,17 @@ export class Market implements ITimestamped {
     }
 }
 
+// 市场的所有成交记录
 export class MarketTrade implements ITimestamped {
     constructor(public exchange: Exchange,
                 public pair: CurrencyPair,
                 public price: number,
                 public size: number,
                 public time: Date,
-                public quote: TwoSidedQuote,
-                public bid: MarketSide,
-                public ask: MarketSide,
-                public make_side: Side) {}
+                public quote: TwoSidedQuote, // 买卖价量
+                public bid: MarketSide, // 价量
+                public ask: MarketSide, // 价量
+                public make_side: Side) {} // 买卖方向
 }
 
 export enum Currency { 
@@ -137,10 +142,11 @@ export enum MarketDataFlag {
     PriceAndSizeChanged = 1 << 4
 }
 
+// 订单来源
 export enum OrderSource {
     Unknown = 0,
-    Quote = 1,
-    OrderTicket = 2
+    Quote = 1, // quote方式发的订单
+    OrderTicket = 2 // 用户通过UI发起的订单
 }
 
 export class SubmitNewOrder {
@@ -176,6 +182,7 @@ export class SentOrder {
     constructor(public sentOrderClientId: string) {}
 }
 
+// 订单详细信息
 export interface OrderStatusReport {
     pair : CurrencyPair;
     side : Side;
@@ -207,6 +214,7 @@ export interface OrderStatusReport {
 
 export interface OrderStatusUpdate extends Partial<OrderStatusReport> { }
 
+// 每个时间点的成交记录，有tradeId ?
 export class Trade implements ITimestamped {
     constructor(public tradeId: string,
                 public time: Date,
@@ -220,6 +228,7 @@ export class Trade implements ITimestamped {
                 public feeCharged: number) {}
 }
 
+// 某个资产的持仓量/冻结量
 export class CurrencyPosition {
     constructor(public amount: number,
                 public heldAmount: number,
@@ -230,13 +239,14 @@ export class CurrencyPosition {
     }
 }
 
+// 某个时间点的账号持仓信息
 export class PositionReport {
     constructor(public baseAmount: number,
                 public quoteAmount: number,
                 public baseHeldAmount: number,
                 public quoteHeldAmount: number,
-                public value: number,
-                public quoteValue: number,
+                public value: number, // 资产折合成商品后的数量
+                public quoteValue: number, // 资产折合成货币后的数量
                 public pair: CurrencyPair,
                 public exchange: Exchange,
                 public time: Date) {}
@@ -262,12 +272,12 @@ export class FairValue implements ITimestamped {
 export enum QuoteAction { New, Cancel }
 export enum QuoteSent { First, Modify, UnsentDuplicate, Delete, UnsentDelete, UnableToSend }
 
-export class Quote {
+export class Quote { // 价量 下单时的价量？
     constructor(public price: number,
                 public size: number) {}
 }
 
-export class TwoSidedQuote implements ITimestamped {
+export class TwoSidedQuote implements ITimestamped { // 买价量 卖价量
     constructor(public bid: Quote, public ask: Quote, public time: Date) {}
 }
 

@@ -70,6 +70,7 @@ export class SafetyCalculator {
         return Math.abs(Utils.fastDiff(now, o.time)) > (1000 * settings.tradeRateSeconds);
     }
 
+	// 1秒钟调用一次
     private computeQtyLimit = () => {
         var settings = this._repo.latest;
 

@@ -8,23 +8,23 @@ import io = require("socket.io-client");
 import moment = require("moment");
 import Messaging = require("../common/messaging");
 import Shared = require("./shared_directives");
-
+// 市场上的所有成交记录
 class MarketTradeViewModel {
-    price: number;
-    size: number;
+    price: number; // 成交价
+    size: number; // 成交量
     time: moment.Moment;
 
-    qA: number;
-    qB: number;
-    qAz: number;
-    qBz: number;
+    qA: number; // quote ask price
+    qB: number; // quote bid price
+    qAz: number; // quote ask size
+    qBz: number; // quote bid size
 
-    mA: number;
-    mB: number;
-    mAz: number;
-    mBz: number;
+    mA: number; // market ask price
+    mB: number; // market bid price
+    mAz: number; // market ask size
+    mBz: number; // market bid size
 
-    make_side: string;
+    make_side: string; // make side
 
     constructor(trade: Models.MarketTrade) {
         this.price = trade.price;

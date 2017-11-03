@@ -67,7 +67,7 @@ export interface IMarketDataBroker {
 }
 
 export interface ITradeBroker {
-    Trade: Utils.Evt<Models.Trade>;
+    Trade: Utils.Evt<Models.Trade>; // 成交信息？
 }
 
 export interface IOrderBroker extends ITradeBroker {
